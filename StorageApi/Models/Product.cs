@@ -1,15 +1,28 @@
-﻿namespace StorageApi.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace StorageApi.Models
 {
     public class Product
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public int Price { get; set; }
-        public string Category { get; set; }
-        public string Shelf { get; set; }
-        public int Count { get; set; }
-        public string Description { get; set; }
-        
 
+        [Required]
+        public string Name { get; set; } = null!;
+
+        [Required]
+        public string Category { get; set; } = null!;
+
+        [Required]
+        public string Shelf { get; set; } = null!;
+
+        [Required]
+        public string Description { get; set; } = null!;
+
+        [Range(0, 100000)]
+        public int Price { get; set; }
+
+        [Range(0, 100000)]
+        public int Count { get; set; }
     }
+
 }
