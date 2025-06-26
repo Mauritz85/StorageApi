@@ -1,16 +1,19 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.EntityFrameworkCore;
+using StorageApi.Data;
+using StorageApi.Dtos;
+using StorageApi.DTOs;
+using StorageApi.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StorageApi.Data;
-using StorageApi.Models;
 
 namespace StorageApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/Products")]
     [ApiController]
     public class ProductsController : ControllerBase
     {
@@ -23,24 +26,43 @@ namespace StorageApi.Controllers
 
         // GET: api/Products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProduct()
+        public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
         {
-            return await _context.Product.ToListAsync();
+            var products = await _context.Product.ToListAsync();
+
+            var productDtos = products.Select(product => new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Count = product.Count,
+            }).ToList();
+
+            return Ok(productDtos);
         }
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductDto>> GetProduct(int id)
         {
             var product = await _context.Product.FindAsync(id);
-
             if (product == null)
             {
                 return NotFound();
             }
 
-            return product;
+            
+            var productDto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Count = product.Count,
+            };
+
+            return Ok(productDto);
         }
+       
 
         // PUT: api/Products/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -76,12 +98,30 @@ namespace StorageApi.Controllers
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<ProductDto>> PostProduct(CreateProductDto createDto)
         {
+            var product = new Product
+            {
+                Name = createDto.Name,
+                Price = createDto.Price,
+                Count = createDto.Count,
+                Category = createDto.Category,
+                Shelf = createDto.Shelf,
+                Description = createDto.Description
+            };
+
             _context.Product.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProduct", new { id = product.Id }, product);
+            var productDto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Count = product.Count,
+            };
+
+            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, productDto);
         }
 
         // DELETE: api/Products/5
@@ -104,5 +144,26 @@ namespace StorageApi.Controllers
         {
             return _context.Product.Any(e => e.Id == id);
         }
+
+        // GET: api/Products/search?category=frukt
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<ProductDto>>> SearchProducts([FromQuery] string category)
+        {
+            var result = await _context.Product
+                .Where(p => p.Category.ToLower().Equals(category.ToLower()))
+                .Select(p => new ProductDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Price = p.Price,
+                    Count = p.Count
+                })
+                .ToListAsync();
+
+            
+
+            return Ok(result);
+        }
+
     }
 }
